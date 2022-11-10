@@ -7,4 +7,4 @@ const pool = new Pool({
     port: 5432,
     database: "perntodo" 
 });
-modoule.exports = pool;
+module.exports = pool;
