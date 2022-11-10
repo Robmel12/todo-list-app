@@ -4,6 +4,7 @@
     // For more information, v  isit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
     
         
 
@@ -14,7 +15,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/server/index.js"
+            "program": "${workspaceFolder}/server/index.js",
+            "stopOnEntry": true
         }
     ]
 }
