@@ -16,7 +16,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/server/index.js",
-            "stopOnEntry": true
+            "stopOnEntry": false
         }
     ]
 }
