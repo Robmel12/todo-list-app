@@ -40,36 +40,32 @@ app.get("/todos/:id", async(req, res)=>{
 app.put("/todos/:id", async(req, res)=>{
     try{
         const {id} = req.params;
-        const {description} = req.body;
-        const updateTodo = await pool.query(
+        const {description, status} = req.body;
+     
+        if(description){const updateTodo = await pool.query(
             "UPDATE todo SET description = $1 WHERE todo_id = $2",
  [description, id]
  );
- res.json("Todo was updated!")
+ res.json(console.log('Id updated'))}
+ if(typeof(status) ===  "boolean"){
+    const updateTodo = await pool.query(
+        "UPDATE todo SET status = $1 WHERE todo_id = $2",
+[status, id]
+);
+res.json(console.log('status updated')).res.json("status updated")}
+        
     }catch (err) {
         console.error(err.message)
     }
 })
-app.put("/todos/:id#box", async(req, res)=>{
-    try{
-        const {id} = req.params;
-        const {status} = req.body;
-        const updateTodo = await pool.query(
-            "UPDATE todo SET description = $1 WHERE todo_id = $2",
- [status, id]
- );
- res.json("Todo box was updated!")
-    }catch (err) {
-        console.error(err.message)
-    }
-})
+
 //delete a todo
 
 app.delete("/todos/:id", async(req, res)=>{
     try{
         const {id} = req.params;
        const deleteTodo = await pool.query("DELETE FROM todo WHERE todo_id=$1", [id])
- res.json("Todo was delete!")
+ res.json("Todo was deleted!")
     }catch (err) {
         console.error(err.message)
     }

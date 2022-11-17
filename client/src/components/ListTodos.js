@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { EditTodo } from "./EditTodo";
+import useComponentVisible from "./useComponentVisible";
+import "./checkbox.scss"
 
 const ListTodos = () => {
   const [todos, setTodos] = useState([]);
@@ -13,6 +15,9 @@ const ListTodos = () => {
     targetID: null,
   })
 
+  const DeleteRef = useRef(null);
+  const EditRef = useRef(null);
+  
   const getTodos = async () => {
     try {
       const response = await fetch("http://localhost:5000/todos");
@@ -28,7 +33,7 @@ const ListTodos = () => {
     e.preventDefault();
 
     try {
-      const bodyMessage = { description: description };
+      const bodyMessage = { "description": description };
       const response = await fetch(`http://localhost:5000/todos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -62,55 +67,91 @@ const handleConfirmDelete = async (e, id) => { try {
   //handle delete
   const handleDeleteButton = async (e, id) => {
     e.preventDefault();
+    setDeleteVisible(true)
     setDeleteMode({
       show: true,
       targetID: id
     })
+    setEditMode(prev => ({
+      ...prev,
+      show: false
+    }))
     
   };
 //handle checkboxChange
-   const handleCheckboxChange =  (e) => { 
+   const handleCheckboxChange =  async (e) => { 
     const {name, checked} = e.target
-    setTodos(prev => (prev.map(item =>{
-      if(item.todo_id.toString() === name){
-  
-        return {...item, status: checked}
-      }
-      return item
-    })))
-         
-  };
-  //handlecheckbox click
-  const handleCheckboxClick = async (e) => {
-    e.preventDefault()
-    const {name, checked} = e.target;
-    try {
+ 
+      try {
       const bodyMessage = {"status": checked} ;
       const response = await fetch(`http://localhost:5000/todos/${name}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bodyMessage),
       });
-      console.log(bodyMessage)
+      getTodos()
+      
     } catch (error) {
       console.error(error.message);
     }
-  
-  }
-  
+    };
+         
   //get todos(data)
   useEffect(() => {
     getTodos();
   }, []);
+//undo delete or edit mode
+  useEffect(() => {
+    const handleEsc = (event) => {
+       if (event.keyCode === 27) {
+        setDeleteMode(prev => ({
+          ...prev,
+          show: false
+        }))
+        setEditMode(prev => ({
+          ...prev,
+          show: false
+        }))
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+   
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+     
+  }
+},[]);
 
+const { isComponentVisible:isEditOn, setIsComponentVisible:setEditVisible } = useComponentVisible(true ,EditRef)
+const {isComponentVisible:isDeleteOn, setIsComponentVisible:setDeleteVisible} = useComponentVisible(true, DeleteRef)
+useEffect(() => {
+  if(!isEditOn && editMode.show ){
+    setEditMode(prev =>({
+      ...prev,
+      show: false
+    }))
+  }
+  if(!isDeleteOn && deleteMode.show){
+    setDeleteMode(prev =>({
+      ...prev,
+      show: false
+    }))
+  }
+
+ 
+}, [isEditOn, isDeleteOn])
+
+
+//sort todos
   const SortedTodos = todos.sort((a, b) => {
     return a.todo_id - b.todo_id;
   });
+  //map todos to table
   const TodoList = SortedTodos.map((todo) => (
     <tr key={todo.todo_id}>
-      <td>{todo.description}</td>
+      <td style={{marginRight: "20px"}}>{todo.description}</td>
       <td>
-        <input type="checkbox" checked={todo.status} name={todo.todo_id} onClick={e => handleCheckboxClick(e)}onChange={(e) => handleCheckboxChange(e)}/>
+        <label class="container"><input  type="checkbox" checked={todo.status} name={todo.todo_id} onChange={(e) => handleCheckboxChange(e)}/> <span class="checkmark"></span></label>
       </td>
       <td>
         <EditTodo
@@ -118,10 +159,13 @@ const handleConfirmDelete = async (e, id) => { try {
           setEditMode={setEditMode}
           editMode={editMode}
           index={todos.indexOf(todo)}
+          setDeleteMode={setDeleteMode}
+          setIsComponentVisible={setEditVisible}
+        
         />
       </td>
       <td>
-        <button className="btn btn-failure" onClick={(e) => handleDeleteButton(e, todo.todo_id)}>
+        <button  name={todo.todo_id} className="btn btn-danger" onClick={(e) => handleDeleteButton(e, todo.todo_id)}>
           Delete
         </button>
       </td>
@@ -131,13 +175,14 @@ const handleConfirmDelete = async (e, id) => { try {
   return (
     <>
       {editMode.show && (
-        <div style={{
+        <div  style={{
+          
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           width: "100%",
           height: "100%",}}>
-        <div
+        <div ref={EditRef}
           style={{
             marginTop: "200px",
             width: "50%",
@@ -146,9 +191,10 @@ const handleConfirmDelete = async (e, id) => { try {
             position: "fixed",
             display: "flex",
             justifyContent: "center",
-            alignItems: "center",
+            alignItems: "flex-start",
             borderRadius: "10px",
-            flexDirection: "column"
+            flexDirection: "column",
+            zIndex: 99
           }}
         >
           <h2 style={{color: "white", marginBottom: "20px"}}>Change your todo!</h2>
@@ -158,7 +204,7 @@ const handleConfirmDelete = async (e, id) => { try {
               handleEditClick(e, editMode.targetID, editMode.description)
             }
           >
-            Confirm
+            Confirm Change
           </button>
           <input
             
@@ -173,18 +219,40 @@ const handleConfirmDelete = async (e, id) => { try {
         </div>
         </div>
       )}
+      {deleteMode.show && 
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",}}>
+      <div ref={DeleteRef} style={{
+            marginTop: "200px",
+            width: "50%",
+            height: "50%",
+            backgroundColor: "rgba(0, 0, 0, .7)",
+            position: "fixed",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            borderRadius: "10px",
+            flexDirection: "column",
+            zIndex: 99
+          }}>
+        <h2 style={{color: "white"}}>Are you sure you want to delete?</h2>
+      <button className="btn btn-danger" onClick={e => handleConfirmDelete(e, deleteMode.targetID)}>Confirm Delete</button></div></div>
+      }
       <table
-        style={{ width: "100%" }}
-        className="table-repsonsive-lg mt5 text-center"
+        style={{ width: "100%", display: "flex", flexDirection:'column', justifyContent: 'center', alignItems:"center"}}
+        className="table-repsonsive-lg mt5"
       >
         <thead>
           <tr>
-            <th>Todo</th>
-            <th></th>
-            <th></th>
+            <th >Todo List</th>
+
           </tr>
         </thead>
-        <tbody className="text-center">{TodoList}</tbody>
+        <tbody style={{width: "50%", gap: "30px", marginTop: "50px"}}>{TodoList}</tbody>
       </table>
     </>
   );
