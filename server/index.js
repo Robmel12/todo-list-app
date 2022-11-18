@@ -7,52 +7,52 @@ app.use(cors())
 app.use(express.json())
 //ROUTES
 //create a todo
-app.post("/todos", async(req, res)=>{
+app.post("/users.todos", async(req, res)=>{
     try{
-        const {description} = req.body
-        const newTodo = await pool.query("INSERT INTO todo (description) VALUES($1) RETURNING *",
-        [description]);
+        const {description,completed, user_id} = req.body
+        const newTodo = await pool.query("INSERT INTO users.todos (description, completed, user_id) VALUES($1, $2, $3) RETURNING *",
+        [description, completed, user_id]);
         res.json(newTodo.rows[0])
     }catch(err){
         console.error(err.message)
     }
 });
 //get all todos
-app.get("/todos", async(req, res)=>{
+app.get("/users.todos", async(req, res)=>{
     try {
-        const allTodos =  await pool.query("SELECT * FROM todo")
+        const allTodos =  await pool.query("SELECT * FROM users.todos")
         res.json(allTodos.rows); 
     } catch (err) {
         console.error(err.message)
     }
 })
 //get a todo
-app.get("/todos/:id", async(req, res)=>{
+app.get("/users.todos/:id", async(req, res)=>{
     try {
       const {id} = req.params
-      const todo = await pool.query("SELECT * FROM todo WHERE todo_id =$1", [id])
+      const todo = await pool.query("SELECT * FROM users.todos WHERE todo_id =$1", [id])
       res.json(todo.rows[0]);
     }catch (err) {
     console.error(err.message)
 }
 })
 //update a todo
-app.put("/todos/:id", async(req, res)=>{
+app.put("/users.todos/:id", async(req, res)=>{
     try{
         const {id} = req.params;
-        const {description, status} = req.body;
+        const {description, completed, user_id} = req.body;
      
         if(description){const updateTodo = await pool.query(
-            "UPDATE todo SET description = $1 WHERE todo_id = $2",
- [description, id]
+            "UPDATE users.todos SET description = $1 WHERE todo_id = $2 AND user_id=$3",
+ [description, id, user_id]
  );
  res.json(console.log('Id updated'))}
- if(typeof(status) ===  "boolean"){
+ if(typeof(completed) ===  "boolean"){
     const updateTodo = await pool.query(
-        "UPDATE todo SET status = $1 WHERE todo_id = $2",
-[status, id]
+        "UPDATE users.todos SET completed = $1 WHERE todo_id = $2 AND user_id=$3",
+[completed, id, user_id]
 );
-res.json(console.log('status updated')).res.json("status updated")}
+res.json(console.log('status updated'))}
         
     }catch (err) {
         console.error(err.message)
@@ -61,16 +61,39 @@ res.json(console.log('status updated')).res.json("status updated")}
 
 //delete a todo
 
-app.delete("/todos/:id", async(req, res)=>{
+app.delete("/users.todos/:id", async(req, res)=>{
     try{
         const {id} = req.params;
-       const deleteTodo = await pool.query("DELETE FROM todo WHERE todo_id=$1", [id])
+        const {user_id} = req.body;
+       const deleteTodo = await pool.query("DELETE FROM users.todos WHERE todo_id = $1 AND user_id=$2", [id, user_id])
  res.json("Todo was deleted!")
     }catch (err) {
         console.error(err.message)
     }
 })
 
+//create an account
+app.post("/users.login", async(req, res)=>{
+    try{
+        const {username, email, password} = req.body
+        const newTodo = await pool.query("INSERT INTO users.login (username, email, password) VALUES($1, $2, $3) RETURNING *",
+        [username, email, password]);
+        res.json(console.log(`new user: ${username} created..`))
+    }catch(err){
+        res.json(err.message)
+    }
+});
+//validate password
+app.get("/users.login", async(req, res)=>{
+        try {
+            const {username, email, password} = req.body
+            const user_id =  await pool.query("SELECT * FROM users.login WHERE username = $2 AND password = $1 OR email = $3 AND password = $1", [password, username, email])
+            res.json(console.log("user: ", user_id.rows)); 
+    } catch (err) {
+      res.json(err.message)
+    }
+})
+//get account details
 
 
 app.listen(5000, ()=> {
