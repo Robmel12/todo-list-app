@@ -1,12 +1,26 @@
 
+import { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Navigate,
+  Routes
+} from "react-router-dom";
 import './App.css';
 //components
-import InputTodo from './components/InputTodo';
-import ListTodos from './components/ListTodos';
+import UserLogin from './components/UserLogin/UserLogin'; 
+import UserTodos from "./components/UserTodos/UserTodos";
 function App() {
+
+
   return (
-    <><InputTodo/>
-      <ListTodos/>
+    <>
+    <Router>
+      <Routes>
+        <Route exact path="/" element={<UserLogin/>}/>
+        <Route exact path="/todos"element={<UserTodos/>}/>
+      </Routes>
+      </Router>
       </>
   );
 }
